@@ -14,9 +14,9 @@ const template=[
 ["Gas","Servicios",500,"monthly"],
 ["Comidas y extras oficina (2 días/semana)","Alimentación oficina",400,"daily",2],
 ["Apoyo mamá (5 días/semana)","Apoyo mamá",200,"daily",5],
-["Inglés personal","Educación",1200,"monthly"],
+["Inglés personal (renovación julio)","Educación",14400,"annual",null,null,7],
 ["Inglés Karim","Educación",130,"weekly"],
-["ChatGPT","Suscripciones",600,"monthly"],
+["ChatGPT (renovación julio)","Suscripciones",7200,"annual",null,null,7],
 ["Fútbol Karim","Fútbol Karim",450,"monthly"],
 ["Cortes de cabello (15 por año)","Ropa",7500,"annual"],
 ["Spotify","Suscripciones",250,"monthly"],
@@ -45,18 +45,52 @@ function render(){
  $("planMonthly").textContent=peso(forecast/12);$("annualPlan").textContent=peso(forecast);$("monthlyPlan").textContent=peso(forecast/12);
  $("movementCount").textContent=monthRows.length+" movimientos";
  $("movements").replaceChildren(...(monthRows.length?monthRows.sort((a,b)=>b.occurred_on.localeCompare(a.occurred_on)).map(t=>record(t.description||t.category,t.occurred_on+" · "+t.category+" · "+t.payment_method,(t.kind==="income"?"+":"−")+peso(t.amount),t.kind==="income",()=>erase("transactions",t.id))):[elem("p","Aún no hay movimientos registrados en este mes.","muted")]));
- $("budgetRecords").replaceChildren(...(budgets.length?budgets.map(b=>record(b.name,(cadence[b.frequency]||b.frequency)+" · "+peso(annual(b))+"/año"+(b.due_day?" · día "+b.due_day:""),peso(b.amount),undefined,()=>erase("budget_items",b.id))):[elem("p","Todavía no hay partidas. Carga la plantilla una sola vez.","muted")]));
+ $("budgetRecords").replaceChildren(...(budgets.length?budgets.map(b=>{const result=record(b.name,(cadence[b.frequency]||b.frequency)+" · "+peso(annual(b))+"/año"+(b.due_month?" · mes de pago "+b.due_month:" · provisión mensual")+(b.due_day?" · día "+b.due_day:""),peso(b.amount),undefined,()=>erase("budget_items",b.id));const edit=elem("button","Editar","secondary tiny");edit.onclick=()=>startBudgetEdit(b);result.querySelector(".right").prepend(edit);return result}):[elem("p","Aún no hay partidas presupuestadas.","muted")]));
 }
 async function refresh(){if(!account)return;const [a,b]=await Promise.all([client.from("transactions").select("*").order("occurred_on",{ascending:false}),client.from("budget_items").select("*").order("created_at",{ascending:true})]);if(a.error||b.error){notice("Error al cargar: "+(a.error||b.error).message);return}transactions=a.data||[];budgets=b.data||[];render();window.dispatchEvent(new CustomEvent("finance:data",{detail:{client,user:account,transactions,budgets}}))}
 async function erase(table,id){if(!confirm("¿Eliminar este registro de forma permanente?"))return;const {error}=await client.from(table).delete().eq("id",id);if(error)notice("No se pudo eliminar: "+error.message);else await refresh()}
 function showAuth(){const logged=!!account;$("setup").hidden=ready;$("auth").hidden=!ready||logged;$("app").hidden=!logged;$("logout").hidden=!logged}
-$("kind").onchange=categories;categories();$("date").value=today();$("period").value=today().slice(0,7);$("period").onchange=render;
+$("kind").onchange=categories;categories();$("date").value=today();$("period").value=today().slice(0,7);$("period").onchange=()=>{render();window.dispatchEvent(new Event("finance:period-change"));window.dispatchEvent(new Event("personal:period-change"))};
 $("loginForm").onsubmit=async ev=>{ev.preventDefault();if(!client)return;const {error}=await client.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});notice(error?error.message:"Sesión iniciada")};
 $("logout").onclick=()=>client?.auth.signOut();
 
 $("moveForm").onsubmit=async ev=>{ev.preventDefault();if(!account)return;const amount=Number($("amount").value);if(!Number.isFinite(amount)||amount<=0)return notice("Introduce un importe válido");const {error}=await client.from("transactions").insert({user_id:account.id,occurred_on:$("date").value,kind:$("kind").value,amount,category:$("category").value,description:$("description").value.trim(),payment_method:$("payment").value});if(error)return notice("Error al guardar: "+error.message);$("amount").value="";$("description").value="";notice("Movimiento guardado");await refresh()};
-$("budgetForm").onsubmit=async ev=>{ev.preventDefault();if(!account)return;const frequency=$("bFrequency").value,amount=Number($("bAmount").value);if(!Number.isFinite(amount)||amount<0)return notice("Importe inválido");const {error}=await client.from("budget_items").insert({user_id:account.id,name:$("bName").value.trim(),category:$("bCategory").value.trim(),amount,frequency,days_per_week:frequency==="daily"?Number($("bDays").value):null,due_day:$("bDue").value?Number($("bDue").value):null});if(error)return notice("Error al guardar: "+error.message);$("budgetForm").reset();notice("Partida creada");await refresh()};
-$("loadTemplate").onclick=async()=>{if(!account)return;if(budgets.length)return notice("La plantilla solo se carga cuando no hay partidas, para evitar duplicados.");const rows=template.map(([name,category,amount,frequency,days_per_week,due_day])=>({user_id:account.id,name,category,amount,frequency,days_per_week:days_per_week??null,due_day:due_day??null}));const {error}=await client.from("budget_items").insert(rows);if(error)return notice("Error cargando plantilla: "+error.message);notice("Plantilla 2027 importada");await refresh()};
+function startBudgetEdit(b){
+ $("bEditId").value=b.id;$("bName").value=b.name;$("bAmount").value=b.amount;$("bFrequency").value=b.frequency;
+ $("bDays").value=b.days_per_week||2;$("bCategory").value=b.category;$("bDue").value=b.due_day||"";$("bDueMonth").value=b.due_month||"";
+ $("budgetSave").textContent="Actualizar concepto";$("budgetEditorTitle").textContent="Modificar "+b.name;
+ $("budgetForm").scrollIntoView({behavior:"smooth",block:"center"});
+}
+function clearBudgetEdit(){$("budgetForm").reset();$("bEditId").value="";$("bDueMonth").value="";$("budgetSave").textContent="Guardar concepto";$("budgetEditorTitle").textContent="Editar o agregar un concepto";}
+$("budgetCancel").onclick=clearBudgetEdit;
+$("budgetForm").onsubmit=async ev=>{
+ ev.preventDefault();if(!account)return;
+ const frequency=$("bFrequency").value,amount=Number($("bAmount").value);
+ if(!Number.isFinite(amount)||amount<0)return notice("Importe inválido");
+ const row={user_id:account.id,name:$("bName").value.trim(),category:$("bCategory").value.trim(),amount,frequency,days_per_week:frequency==="daily"?Number($("bDays").value):null,due_day:$("bDue").value?Number($("bDue").value):null,due_month:$("bDueMonth").value?Number($("bDueMonth").value):null};
+ const id=$("bEditId").value;
+ const {error}=id?await client.from("budget_items").update(row).eq("id",id):await client.from("budget_items").insert(row);
+ if(error)return notice("No se guardó el presupuesto: "+error.message+". Verifica haber ejecutado budget_renewals.sql.");
+ clearBudgetEdit();notice(id?"Presupuesto actualizado":"Concepto agregado");await refresh()
+};
+$("syncTemplate").onclick=async()=>{
+ if(!account)return;
+ if(!confirm("Se añadirán los conceptos que falten y se convertirán ChatGPT e inglés personal en renovaciones anuales de julio de 2027. Se conservarán otros presupuestos existentes. ¿Continuar?"))return;
+ const rows=[];
+ for(const [name,category,amount,frequency,days_per_week,due_day,due_month] of template){
+  const oldNames=name.startsWith("ChatGPT (")?["ChatGPT"]:name.startsWith("Inglés personal (")?["Inglés personal"]:[];
+  const existing=budgets.find(b=>b.name===name||oldNames.includes(b.name));
+  const row={user_id:account.id,name,category,amount,frequency,days_per_week:days_per_week??null,due_day:due_day??null,due_month:due_month??null};
+  if(existing){
+   if(oldNames.length)rows.push({update:true,id:existing.id,row});
+  }else rows.push({update:false,row})
+ }
+ for(const task of rows){
+  const {error}=task.update?await client.from("budget_items").update(task.row).eq("id",task.id):await client.from("budget_items").insert(task.row);
+  if(error){notice("No se pudo completar: "+error.message+"; verifica budget_renewals.sql.");await refresh();return}
+ }
+ notice("Presupuesto sincronizado. ChatGPT e inglés previstos para julio. Revisa y edita los importes cuando corresponda.");await refresh();
+};
 for(const button of document.querySelectorAll("[data-tab]"))button.onclick=()=>{document.querySelectorAll("[data-tab]").forEach(b=>b.classList.toggle("active",b===button));document.querySelectorAll(".page").forEach(s=>s.hidden=s.id!==button.dataset.tab);if(button.dataset.tab==="forecast")window.dispatchEvent(new Event("finance:show"));if(button.dataset.tab==="personal")window.dispatchEvent(new Event("personal:show"))};
 function download(filename,content,mime){const u=URL.createObjectURL(new Blob([content],{type:mime})),a=document.createElement("a");a.href=u;a.download=filename;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)}
 const csvCell=v=>'"'+String(v??"").replaceAll('"','""')+'"';
