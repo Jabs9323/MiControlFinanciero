@@ -53,3 +53,11 @@ Sin edición de movimientos, balances por cuenta, conciliación bancaria, gráfi
 - Fondo de ahorro: 21 julio (dato proporcionado por usuario, preliminar). Caja de ahorro: diciembre. PTU, MIP, aguinaldo: la hoja contable no permitió identificar de forma inequívoca sus fechas; **no se asignan a meses sin confirmación**. Captura manualmente su categoría e importe en el editor de escenario.
 - AOP en cero o incompleto hasta cargar plantilla y congelar AOP. Las partidas anuales se prorratean en 12 meses como reservas; no son fechas de desembolso. Vales se proyectan a $5,000 al mes brutos, con comisión de $300 presupuestada como gasto (no descontarla dos veces).
 - Requiere conexión a internet para leer y guardar escenarios; GitHub Pages solo aloja código estático.
+
+
+## Panel de finanzas personales (v3)
+- Vista **Mi mes y saldos**: elegir mes 2027; presupuesto de egresos, gastos reales capturados y remanente del presupuesto; barras por categoría.
+- Checklist mensual basado en presupuestos guardados. Los checks **no** generan movimientos reales ni pagos en banco; para conciliar registra también el gasto en Movimientos. Los montos semanales, bimestrales y diarios se muestran como equivalentes mensuales, no como calendario exacto de vencimientos.
+- Saldos de **banco**, **efectivo**, y **tarjeta de crédito**. El saldo del crédito representa **deuda pendiente** en positivo, no línea de crédito disponible. Liquidez = banco + efectivo; posición neta = liquidez - deuda de crédito. Estas cifras se actualizan MANUALMENTE, no se sincronizan con instituciones financieras ni con cada registro de gastos. No utilizar como conciliación bancaria automática.
+- Ejecuta [personal_dashboard.sql](personal_dashboard.sql) en Supabase SQL Editor para crear `money_accounts` y `payment_checks` con RLS antes de guardar información.
+- Se eliminó la sección pública para cambiar contraseñas y el botón de registro. Para proyecto de un único usuario: desactiva **Allow new users to sign up** en Authentication > Sign In / Providers y revisa Authentication > Users para eliminar cuentas de prueba no deseadas. Tu contraseña actual sigue funcionando. La interfaz de GitHub Pages continúa siendo pública, pero los datos requieren autenticación y políticas RLS.
