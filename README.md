@@ -42,3 +42,14 @@ Sin edición de movimientos, balances por cuenta, conciliación bancaria, gráfi
 - \`config.js\`: parámetros públicos de conexión Supabase, actualmente marcadores de posición.
 - \`schema.sql\`: tablas, índices, validaciones y RLS.
 - \`manifest.webmanifest\`, \`icon.svg\`, \`sw.js\`: instalación y caché de interfaz.
+
+
+## Actualización 2027: control privado y AOP vs Forecast
+- La interfaz de registro público fue eliminada. **Acción obligatoria del administrador:** Supabase Dashboard > Authentication > Sign In / Providers > desactivar **Allow new users to sign up**. Ocultar un botón no impide registros por API.
+- Invita nuevas cuentas desde Authentication > Users > Add user > Send invitation. Cada usuario define su contraseña en la sección **Seguridad de mi cuenta** después de aceptar la invitación; nunca publiques secret/service_role keys.
+- Ejecuta [forecast_2027.sql](forecast_2027.sql) una sola vez en Supabase SQL Editor para guardar escenarios privados por usuario.
+- Abre **AOP vs Forecast**; pulsa **Guardar AOP base** tras cargar la plantilla de presupuesto. Edita pronósticos por mes/categoría; el Real se extrae exclusivamente de transacciones registradas en 2027.
+- El calendario fue revisado contra el archivo preliminar ADP 2027: las catorcenas siguen la secuencia del 14 enero al 30 diciembre; 25 marzo y 30 diciembre requieren confirmación por formato/inhabilidad. No tomes las fechas preliminares como instrucciones de pago definitivas.
+- Fondo de ahorro: 21 julio (dato proporcionado por usuario, preliminar). Caja de ahorro: diciembre. PTU, MIP, aguinaldo: la hoja contable no permitió identificar de forma inequívoca sus fechas; **no se asignan a meses sin confirmación**. Captura manualmente su categoría e importe en el editor de escenario.
+- AOP en cero o incompleto hasta cargar plantilla y congelar AOP. Las partidas anuales se prorratean en 12 meses como reservas; no son fechas de desembolso. Vales se proyectan a $5,000 al mes brutos, con comisión de $300 presupuestada como gasto (no descontarla dos veces).
+- Requiere conexión a internet para leer y guardar escenarios; GitHub Pages solo aloja código estático.
