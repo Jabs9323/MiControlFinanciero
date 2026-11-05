@@ -10,7 +10,7 @@ function item(name,description,value){const div=document.createElement("div");di
 async function reload(){
  if(!owner||!client)return;
  const a=await Promise.all([
- client.from("money_accounts").select("*").order("created_at",{ascending:true}),
+ client.from("money_accounts").select("*").order("name",{ascending:true}),
  client.from("payment_checks").select("*")
  ]);
  if(a[0].error||a[1].error){available=false;displayStatus("Falta ejecutar personal_dashboard.sql en Supabase. "+(a[0].error||a[1].error).message);render();return}
