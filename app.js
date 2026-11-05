@@ -64,6 +64,7 @@ $("downloadCSV").onclick=()=>{const rows=[["fecha","tipo","categoria","descripci
 $("downloadJSON").onclick=()=>{const safeTx=transactions.map(t=>({fecha:t.occurred_on,tipo:t.kind,categoria:t.category,descripcion:t.description,importe:t.amount,metodo:t.payment_method})),safeBudgets=budgets.map(b=>({concepto:b.name,categoria:b.category,importe:b.amount,frecuencia:b.frequency,dias_semana:b.days_per_week,dia_vencimiento:b.due_day}));download("reporte-chatgpt.json",JSON.stringify({exportado:today(),movimientos:safeTx,presupuestos:safeBudgets},null,2),"application/json")};
 (function payroll(){let anchor=new Date(2026,10,5,12),dates=[];for(let i=0;i<40;i++){const d=new Date(anchor);d.setDate(d.getDate()+14*i);if(d.getFullYear()===2027)dates.push(d)}$("paychecks").replaceChildren(...dates.map((d,i)=>record("Catorcena "+(i+1)+" · "+d.toLocaleDateString("es-MX",{day:"numeric",month:"short",year:"numeric"}),"Sueldo neto estimado; vales en depósito aparte",peso(8666))));$("bonuses").replaceChildren(...[["Fondo de ahorro","$70,000"],["PTU","$20,000"],["Bono MIP","$25,000"],["Aguinaldo","$30,000"],["Caja de ahorro (diciembre)","$10,000"]].map(([name,value])=>record(name,"Fecha por confirmar",value)))})();
 // Always show the login/setup screen before awaiting Supabase authentication.
+window.__financeAppBooted=true;
 showAuth();
 if(!ready){notice("Configura Supabase en config.js para entrar.");}
 else{
