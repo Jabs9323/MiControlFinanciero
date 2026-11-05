@@ -63,5 +63,20 @@ const csvCell=v=>'"'+String(v??"").replaceAll('"','""')+'"';
 $("downloadCSV").onclick=()=>{const rows=[["fecha","tipo","categoria","descripcion","importe","metodo"],...transactions.map(t=>[t.occurred_on,t.kind,t.category,t.description,t.amount,t.payment_method])];download("mis-movimientos.csv","\ufeff"+rows.map(r=>r.map(csvCell).join(",")).join("\r\n"),"text/csv;charset=utf-8")};
 $("downloadJSON").onclick=()=>{const safeTx=transactions.map(t=>({fecha:t.occurred_on,tipo:t.kind,categoria:t.category,descripcion:t.description,importe:t.amount,metodo:t.payment_method})),safeBudgets=budgets.map(b=>({concepto:b.name,categoria:b.category,importe:b.amount,frecuencia:b.frequency,dias_semana:b.days_per_week,dia_vencimiento:b.due_day}));download("reporte-chatgpt.json",JSON.stringify({exportado:today(),movimientos:safeTx,presupuestos:safeBudgets},null,2),"application/json")};
 (function payroll(){let anchor=new Date(2026,10,5,12),dates=[];for(let i=0;i<40;i++){const d=new Date(anchor);d.setDate(d.getDate()+14*i);if(d.getFullYear()===2027)dates.push(d)}$("paychecks").replaceChildren(...dates.map((d,i)=>record("Catorcena "+(i+1)+" · "+d.toLocaleDateString("es-MX",{day:"numeric",month:"short",year:"numeric"}),"Sueldo neto estimado; vales en depósito aparte",peso(8666))));$("bonuses").replaceChildren(...[["Fondo de ahorro","$70,000"],["PTU","$20,000"],["Bono MIP","$25,000"],["Aguinaldo","$30,000"],["Caja de ahorro (diciembre)","$10,000"]].map(([name,value])=>record(name,"Fecha por confirmar",value)))})();
-if(!ready){showAuth();notice("Configura Supabase en config.js para entrar.");}else{client.auth.onAuthStateChange((_event,session)=>{const old=account?.id;account=session?.user||null;showAuth();if(account&&account.id!==old)refresh();if(!account){transactions=[];budgets=[];window.dispatchEvent(new Event("finance:logout"));}});client.auth.getSession().then(({data,error})=>{if(error)return notice(error.message);account=data.session?.user||null;showAuth();if(account)refresh()})}
+// Always show the login/setup screen before awaiting Supabase authentication.
+showAuth();
+if(!ready){notice("Configura Supabase en config.js para entrar.");}
+else{
+ client.auth.onAuthStateChange((_event,session)=>{
+  const previousUser=account?.id;
+  account=session?.user||null;
+  showAuth();
+  if(account&&account.id!==previousUser)queueMicrotask(()=>refresh());
+  if(!account){transactions=[];budgets=[];window.dispatchEvent(new Event("finance:logout"))}
+ });
+ client.auth.getSession().then(({data,error})=>{
+  if(error){notice("No se pudo restaurar la sesión. Inicia sesión nuevamente: "+error.message);account=null;showAuth();return}
+  account=data.session?.user||null;showAuth();if(account)refresh()
+ }).catch(error=>{account=null;showAuth();notice("Error de autenticación: "+(error?.message||String(error)))});
+}
 if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});
