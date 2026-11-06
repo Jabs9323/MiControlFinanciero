@@ -14,7 +14,7 @@ async function reload(){
  client.from("payment_checks").select("*")
  ]);
  if(a[0].error||a[1].error){available=false;displayStatus("Falta ejecutar personal_dashboard.sql en Supabase. "+(a[0].error||a[1].error).message);render();return}
- available=true;accounts=a[0].data||[];checks=a[1].data||[];displayStatus("Saldos editables y checklist guardados de forma privada en Supabase.");render()
+ available=true;accounts=a[0].data||[];checks=a[1].data||[];displayStatus("Saldos editables y checklist guardados de forma privada en Supabase.");render();window.dispatchEvent(new Event("cashflow:refresh"))
 }
 function render(){
  const period=el("period").value||"2027-01",year=Number(period.slice(0,4)),month=Number(period.slice(5,7)),prefix=period;
